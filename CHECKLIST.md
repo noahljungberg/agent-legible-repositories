@@ -18,8 +18,8 @@
 ## Design Docs
 
 - [ ] `docs/design/index.md` lists all major components.
-- [ ] Each high-change component has a design doc.
-- [ ] Each component doc lists public API, implementation files, dependencies, tests, constraints, and non-goals.
+- [ ] Each major component has one design doc, for example `docs/design/loader.md`, `docs/design/memory-reader.md`, `docs/design/overlay.md`, `docs/design/auth.md`, or `docs/design/billing.md`.
+- [ ] Each component doc acts as a context router and lists public API, implementation files, dependencies, tests, constraints, and non-goals.
 - [ ] Docs have status markers such as planned, in progress, complete, stale.
 
 ## Execution Plans

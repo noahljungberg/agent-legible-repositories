@@ -123,7 +123,9 @@ scripts/
 The index is critical. Without an index, many docs become an unsearchable pile. The agent should learn the reading path from the repository itself.
 
 \subsection{Component Contracts}
-Each component contract should include purpose, allowed dependencies, public API, implementation files, test files, constraints, acceptance criteria, and explicit non-goals. This localizes context. If the task is about the billing adapter, the agent should not need to understand every renderer, database adapter, or deployment script.
+Each major component should have one component design document. For example, a systems repository might have \texttt{docs/design/loader.md}, \texttt{docs/design/memory-reader.md}, and \texttt{docs/design/overlay.md}; a web service might have \texttt{docs/design/auth.md}, \texttt{docs/design/billing.md}, and \texttt{docs/design/api.md}. These files are not ordinary explanatory docs. They are context routers. When an agent is asked to work on a component, it should read that component's design doc first instead of scanning the whole repository.
+
+Each component contract should include purpose, allowed dependencies, public API, implementation files, test files, constraints, acceptance criteria, and explicit non-goals. This localizes context. If the task is about the billing adapter, the agent should not need to understand every renderer, database adapter, or deployment script. If a component has no design doc, the agent should treat that as missing harness infrastructure and either create a minimal contract or record the gap before doing broad work.
 
 \subsection{Active Execution Plans}
 Large work should be decomposed into checkable tasks. The plan should identify the next unchecked item, define acceptance criteria, and require the agent to update progress only after verification. This converts vague intent into an executable queue.
@@ -172,7 +174,7 @@ For a new repository, create the harness before the code grows:
   \item Define architecture layers and dependency rules in \texttt{ARCHITECTURE.md}.
   \item Define coding conventions and error-handling patterns in \texttt{CONVENTIONS.md}.
   \item Create \texttt{docs/design/index.md} before writing many component docs.
-  \item For each component, write a component contract before or alongside implementation.
+  \item For each major component, write one component design doc before or alongside implementation.
   \item Add tests and scripts as soon as public APIs exist.
   \item Create an active plan for multi-step work and require one-task-at-a-time execution.
   \item Track quality, known issues, and decisions in versioned files.
@@ -186,7 +188,7 @@ For an existing repository, do not begin by documenting everything. Begin by red
   \item Create or repair the entry map.
   \item Create an architecture map from actual imports and build targets.
   \item Create a design index with statuses: complete, in progress, stale, missing.
-  \item Write component contracts only for high-change or high-risk areas first.
+  \item Write component contracts only for high-change, high-risk, or frequently edited areas first.
   \item Add scripts for the commands humans already run manually.
   \item Add mechanical checks for the most damaging recurring mistakes.
   \item Create a quality ledger and known-issues file.

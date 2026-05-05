@@ -20,7 +20,7 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 - `ARCHITECTURE.md`: layers, ownership boundaries, dependency rules, and rationale.
 - `CONVENTIONS.md`: naming, error handling, logging, comments, tests, and local taste.
 - `docs/design/index.md`: routing table for all design docs and their status.
-- `docs/design/<component>.md`: one component contract per major component.
+- `docs/design/<component>.md`: one design doc per major component, such as `loader.md`, `memory-reader.md`, `overlay.md`, `auth.md`, `billing.md`, or `api.md`.
 - `docs/plans/active/*.md`: executable task plans for multi-step work.
 - `docs/QUALITY.md`: trust ledger for components, tests, docs, and risks.
 - `docs/plans/known-issues.md`: non-blocking debt and follow-up work.
@@ -33,7 +33,7 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 2. Define architecture layers before many components exist.
 3. Write conventions for the patterns agents are likely to copy.
 4. Create `docs/design/index.md` before component docs multiply.
-5. Add a component contract before or alongside each component.
+5. Add one component design doc before or alongside each major component.
 6. Add build/test/lint scripts early and document them in `AGENTS.md`.
 7. Use active plans for any task that spans more than one obvious edit.
 8. Track quality and known issues from the first nontrivial implementation.
@@ -44,12 +44,16 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 2. Create a short `AGENTS.md` that tells future agents where to start.
 3. Create `ARCHITECTURE.md` from the actual code, then mark desired corrections.
 4. Create `docs/design/index.md` with each component status: missing, stale, draft, complete.
-5. Write component docs first for high-change, high-risk, or confusing areas.
+5. Write component docs first for high-change, high-risk, confusing, or frequently edited areas.
 6. Turn recurring manual commands into scripts.
 7. Add mechanical checks for the most damaging recurring mistakes.
 8. Add `docs/QUALITY.md` and `known-issues.md` so agents know what is trustworthy.
 
-## Component Contract Template
+## Component Design Docs
+
+One major component should have one design doc. Examples: `docs/design/loader.md`, `docs/design/memory-reader.md`, `docs/design/overlay.md`, `docs/design/auth.md`, `docs/design/billing.md`, or `docs/design/api.md`.
+
+These docs are context routers, not decoration. When an agent is asked to work on a component, it should read that component's design doc first instead of scanning the whole repository. If a component has no design doc, treat that as missing harness infrastructure.
 
 Each component design doc should include:
 
