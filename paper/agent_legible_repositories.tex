@@ -1,0 +1,279 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!60!black,
+  citecolor=blue!60!black,
+  urlcolor=blue!60!black
+}
+
+\title{Agent-Legible Repositories:\ Harness Engineering Patterns for AI-Native Software Development}
+\author{Noah}
+\date{May 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+AI coding agents are increasingly capable of producing, testing, reviewing, and maintaining software, yet their effectiveness varies sharply across repositories. This paper argues that the repository itself should be treated as the primary agent interface. Documentation, architecture rules, execution plans, tests, scripts, and quality ledgers are not auxiliary artifacts; they are the control surface through which agents perceive and modify software systems. Drawing on recent work in harness engineering, software-engineering benchmarks, agent-computer interfaces, context engineering, skill libraries, and token-efficiency research, this paper defines the \emph{agent-legible repository}: a repository whose structure allows an AI coding agent to localize context, obey project constraints, implement bounded changes, verify behavior, and preserve durable knowledge across sessions. This paper proposes the Agent-Legible Repository framework, a practical design method for creating or repairing repositories intended for mostly or fully AI-written code.
+\end{abstract}
+
+\section*{Agent-Facing Summary}
+This paper is meant to be fed to future coding agents. The operational claim is simple: \textbf{design the repository as the agent's interface}. A good agent-first repository gives the agent a small map, a navigable knowledge base, component contracts, one active task queue, mechanical architecture rules, cheap verification commands, and a durable ledger of quality and decisions. Do not rely on chat history, human memory, or one giant instruction file. Put durable knowledge in versioned files, keep it indexed, and turn repeated failures into tests, lints, scripts, or docs.
+
+\section{Introduction}
+Large language model coding agents have moved from code-completion tools toward interactive software workers: they inspect files, run commands, edit code, execute tests, and iterate on failures. Their success, however, is not determined by model capability alone. The same model can behave sharply differently depending on whether the repository provides a coherent operating environment.
+
+The practical lesson from harness engineering is that humans increasingly design environments, feedback loops, and constraints while agents execute implementation work \cite{lopopolo2026harness}. In this setting, repository design becomes a form of interface design. If important knowledge lives in chat threads, private memory, stale wiki pages, or unindexed documents, the agent cannot reliably use it. If architecture is described only as preference rather than enforced as a check, agents will eventually drift. If tasks are broad and verification is expensive, agents spend context on rediscovery and cleanup rather than progress.
+
+This paper proposes a compact framework for repositories meant to support AI-native software development. The framework is intentionally practical: it is meant to become a reusable skill for future agents that create new repositories or repair old ones.
+
+\section{Related Work}
+\subsection{Software Engineering as an Agent Benchmark}
+SWE-bench established real-world issue resolution as a challenging evaluation setting for language models: tasks require multi-file understanding, long-context reasoning, execution environments, and coordinated edits rather than isolated code generation \cite{jimenez2023swebench}. This benchmark line motivates repository structures that help agents find relevant code and verify changes.
+
+SWE-agent introduced the agent-computer interface (ACI) framing, arguing that language model agents are a new category of computer user and benefit from interfaces designed for their abilities and limitations \cite{yang2024sweagent}. An agent-legible repository extends this idea from terminal commands and editor tools to repository topology itself.
+
+Agentless provides an important counterweight to complex autonomy. It showed that relatively simple localization, repair, and validation workflows can be competitive with more elaborate autonomous systems on software-engineering tasks \cite{xia2024agentless}. This supports bounded task queues and explicit verification loops over vague open-ended agency.
+
+\subsection{Harness Engineering and Repository-Local Knowledge}
+OpenAI's harness-engineering account describes a fully agent-generated codebase where the repository knowledge base is treated as the system of record: a short entry map points to structured design docs, execution plans, quality records, generated references, and enforcement tools \cite{lopopolo2026harness}. The article's central instruction, ``give Codex a map, not a 1,000-page instruction manual,'' is a concise statement of progressive disclosure for coding agents.
+
+Codified Context presents a related infrastructure for preserving agent memory in a complex codebase through a hot-memory constitution, specialized agents, and a cold-memory specification knowledge base \cite{vasilopoulos2026codified}. The same distinction appears in repository design: short always-loaded instructions should route agents toward deeper on-demand documents rather than attempting to contain all knowledge.
+
+Spec Kit Agents studies context-grounded agentic workflows and adds read-only discovery hooks plus validation hooks to spec-driven development stages \cite{taghavi2026speckit}. The core lesson is that grounding and validation should be explicit workflow operations, not hoped-for behavior.
+
+\subsection{Context Engineering and Skills}
+Structured Context Engineering reports that file-native agents can scale through domain-partitioned context and that format choice matters less than architecture and model capability in some settings \cite{mcmillan2026structured}. This supports the use of ordinary Markdown, LaTeX, code comments, and scripts as long as the repository is navigable and partitioned.
+
+Corpus2Skill argues that agents should navigate hierarchical knowledge rather than merely consume flat retrieval results \cite{sun2026corpus2skill}. CUA-Skill shows that reusable structured skills can improve computer-use agent robustness \cite{chen2026cuaskill}. Li further argues that large flat skill libraries can degrade sharply and that hierarchical routing improves scalability \cite{li2026singleagent}. These findings imply that repository instructions and skill libraries should be indexed, layered, and routed, not dumped into one undifferentiated file.
+
+\subsection{Token Efficiency}
+Tokenomics examines where tokens are consumed in agentic software engineering and finds substantial cost in iterative refinement and review \cite{salim2026tokenomics}. SWE-Pruner shows that task-aware context pruning can reduce token use while preserving performance in coding-agent settings \cite{wang2026swepruner}. Agent-legible repositories are a manual, file-native form of task-aware pruning: they reduce rediscovery by telling the agent where to look and what to ignore.
+
+The VoltAgent curated paper list is useful as a living index of recent AI-agent research across memory, tooling, evaluation, workflows, and security \cite{voltagent2026awesome}. Such curated indices are valuable inputs to agent workflow design, but they should be distilled into local operating rules before being used in production repositories.
+
+\section{Problem Statement}
+A repository that works for human experts can still be hostile to AI agents. Common failure modes include:
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Context blindness}: the agent cannot find the relevant files, conventions, or prior decisions.
+  \item \textbf{Instruction overload}: one large instruction file crowds out task context and makes priority unclear.
+  \item \textbf{Architectural drift}: dependencies, naming, ownership, and layering are described but not checked.
+  \item \textbf{Repeated rediscovery}: each session spends tokens re-learning the same layout and decisions.
+  \item \textbf{Task overbreadth}: agents attempt broad refactors instead of completing one bounded change.
+  \item \textbf{Verification friction}: tests, builds, linters, or acceptance checks are missing, slow, undocumented, or flaky.
+  \item \textbf{Documentation rot}: docs are not versioned with the code or lack ownership and freshness checks.
+  \item \textbf{Chat-memory dependency}: critical knowledge lives in conversations that future agents cannot access.
+\end{enumerate}
+
+The design objective is not to maximize documentation volume. It is to maximize \emph{agent navigation quality}: the probability that an agent reads the right context, ignores irrelevant context, makes a bounded edit, and verifies the result.
+
+\section{Definitions}
+\textbf{Agent-legible repository.} A repository whose local artifacts let an AI coding agent understand what to do, where to look, which constraints apply, how to verify work, and how to update durable project memory.
+
+\textbf{Entry map.} A short always-loaded file, often named \texttt{AGENTS.md}, \texttt{CLAUDE.md}, \texttt{GEMINI.md}, Cursor rules, Copilot instructions, or another tool-specific equivalent, that describes the repository purpose, workflow, key commands, and pointers to deeper documents. The filename is less important than the role: the file is a maintained routing map into deeper context.
+
+\textbf{Cold memory.} Versioned on-demand documents such as architecture docs, component design docs, product specs, security notes, and references.
+
+\textbf{Hot memory.} Short high-priority operating rules that should be loaded every session: current task protocol, conventions, verification commands, and recovery steps.
+
+\textbf{Component contract.} A design document for one component that records purpose, public API, implementation files, dependencies, tests, constraints, and non-goals.
+
+\textbf{Execution plan.} A versioned task queue with checked tasks, acceptance criteria, decision log, and progress log.
+
+\textbf{Verification harness.} The set of commands, tests, linters, scripts, probes, and acceptance checks that let an agent decide whether a change is complete.
+
+\section{The Agent-Legible Repository Framework}
+The framework consists of nine mutually reinforcing artifacts.
+
+\subsection{Entry Map}
+The entry map should be concise. It answers: What is this repo? What is the current workflow? What commands verify work? Where are architecture, conventions, design docs, active plans, and known issues? It should not duplicate every component detail.
+
+\subsection{Knowledge Topology}
+The repository needs an indexed knowledge base. A typical layout is:
+
+\begin{verbatim}
+AGENTS.md
+ARCHITECTURE.md
+CONVENTIONS.md
+docs/
+  design/
+    index.md
+    component-a.md
+    component-b.md
+  plans/
+    active/
+    completed/
+  references/
+  examples/
+  QUALITY.md
+  known-issues.md
+src/
+tests/
+scripts/
+\end{verbatim}
+
+The index is critical. Without an index, many docs become an unsearchable pile. The agent should learn the reading path from the repository itself.
+
+\subsection{Component Contracts}
+Each component contract should include purpose, allowed dependencies, public API, implementation files, test files, constraints, acceptance criteria, and explicit non-goals. This localizes context. If the task is about the billing adapter, the agent should not need to understand every renderer, database adapter, or deployment script.
+
+\subsection{Active Execution Plans}
+Large work should be decomposed into checkable tasks. The plan should identify the next unchecked item, define acceptance criteria, and require the agent to update progress only after verification. This converts vague intent into an executable queue.
+
+\subsection{Mechanical Invariants}
+Documentation alone is weak. Important rules should become mechanical checks: dependency boundaries, naming conventions, public API documentation, file size limits, schema validity, generated-code freshness, forbidden imports, and required tests. Lint errors should include remediation guidance because their output becomes agent context.
+
+\subsection{Verification Harness}
+Every repository should expose a small set of commands for build, test, lint, typecheck, formatting, and domain-specific acceptance. The commands should be documented in the entry map and kept cheap enough to run frequently. When possible, scripts should encapsulate complex validation instead of requiring agents to remember command sequences.
+
+\subsection{Quality and Entropy Ledger}
+A quality ledger records component trust levels, test gaps, known risks, and last-updated dates. A known-issues file records non-blocking defects. These files prevent agents from treating all parts of the codebase as equally reliable.
+
+\subsection{Examples and Anti-Patterns}
+Agents imitate local examples. Repositories should include gold-standard examples and explicit anti-patterns for common mistakes. When a recurring failure appears, either add a test/lint or document it as an anti-pattern with a replacement pattern.
+
+\subsection{Skill Layer}
+The repository should have reusable skills for repeated workflows: adding a component, writing a design doc, performing a code review, debugging a failing test, creating a migration, or auditing documentation. Skills should be hierarchical and specific. A flat list of dozens of similar skills creates selection burden.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lll}
+\toprule
+Artifact & Agent function & Minimum content \\
+\midrule
+Entry file & Entry map & Purpose, workflow, commands, pointers \\
+\texttt{ARCHITECTURE.md} & Constraint law & Layers, allowed dependencies, rationale \\
+\texttt{CONVENTIONS.md} & Local taste & Naming, errors, logging, comments, tests \\
+\texttt{docs/design/index.md} & Router & Component list, status, reading order \\
+Component docs & Local context & API, files, tests, constraints, non-goals \\
+Active plans & Task queue & One next action, acceptance, progress log \\
+Quality ledger & Trust map & Grades, risks, stale areas, test gaps \\
+Scripts/tests & Feedback & Build, test, lint, acceptance checks \\
+Skills & Reuse & Bounded operational procedures \\
+\bottomrule
+\end{tabular}
+\caption{Core artifacts in an agent-legible repository.}
+\end{table}
+
+\section{Operational Method}
+\subsection{Greenfield Setup}
+For a new repository, create the harness before the code grows:
+
+\begin{enumerate}[leftmargin=*]
+  \item Write a short agent entry file, such as \texttt{AGENTS.md} or a tool-specific equivalent, with purpose, workflow, commands, and document map.
+  \item Define architecture layers and dependency rules in \texttt{ARCHITECTURE.md}.
+  \item Define coding conventions and error-handling patterns in \texttt{CONVENTIONS.md}.
+  \item Create \texttt{docs/design/index.md} before writing many component docs.
+  \item For each component, write a component contract before or alongside implementation.
+  \item Add tests and scripts as soon as public APIs exist.
+  \item Create an active plan for multi-step work and require one-task-at-a-time execution.
+  \item Track quality, known issues, and decisions in versioned files.
+\end{enumerate}
+
+\subsection{Brownfield Repair}
+For an existing repository, do not begin by documenting everything. Begin by reducing agent uncertainty:
+
+\begin{enumerate}[leftmargin=*]
+  \item Inventory components and current verification commands.
+  \item Create or repair the entry map.
+  \item Create an architecture map from actual imports and build targets.
+  \item Create a design index with statuses: complete, in progress, stale, missing.
+  \item Write component contracts only for high-change or high-risk areas first.
+  \item Add scripts for the commands humans already run manually.
+  \item Add mechanical checks for the most damaging recurring mistakes.
+  \item Create a quality ledger and known-issues file.
+\end{enumerate}
+
+\subsection{Default Agent Protocol}
+A future coding agent should follow this loop:
+
+\begin{enumerate}[leftmargin=*]
+  \item Read the entry map.
+  \item Read the active plan or issue.
+  \item Identify the component and read its design contract.
+  \item Read architecture and conventions relevant to the change.
+  \item Inspect existing code and tests in the target component.
+  \item Make the smallest change satisfying the task.
+  \item Run the documented verification commands.
+  \item Update docs, plan, quality ledger, or known issues only when the result changes durable project knowledge.
+  \item Stop after the requested task is complete.
+\end{enumerate}
+
+\section{Evaluation Metrics}
+Agent-legibility can be evaluated empirically. Useful metrics include:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Context localization}: files opened before first correct edit; irrelevant files opened per task.
+  \item \textbf{Token efficiency}: input tokens before first edit; total tokens to green verification.
+  \item \textbf{Task success}: percentage of tasks completed without human clarification.
+  \item \textbf{Verification success}: first-run build/test pass rate after edit; time-to-green.
+  \item \textbf{Architectural coherence}: number of dependency or convention violations per task.
+  \item \textbf{Recovery}: ability to resume from a fresh session using only repository-local state.
+  \item \textbf{Documentation freshness}: stale links, stale file references, and docs contradicted by code.
+  \item \textbf{Mistake recurrence}: repeated failures before and after adding docs, lints, or scripts.
+\end{itemize}
+
+A practical experiment is to run the same set of coding tasks against two versions of a repository: baseline and agent-legible. Compare task success, tokens, files opened, verification failures, and human interventions.
+
+\section{Limitations}
+The framework is model-dependent. A structure that works well for frontier coding agents may be insufficient for smaller models. Documentation can also become a liability if stale, too broad, or not connected to mechanical checks. Small prototypes may not need the full framework. Some domains require additional artifacts, such as threat models, product specs, data schemas, migration guides, or UI design systems. Finally, this paper is a framework and working synthesis; formal validation requires controlled experiments across repositories, models, and task types.
+
+\section{Conclusion}
+AI-native software development changes the role of repository design. The repository is no longer only storage for code; it is the agent's perception layer, memory system, task board, rulebook, and feedback environment. Agent-legible repositories reduce wasted context, constrain implementation, preserve project memory, and make verification routine. The core prescription is simple: give agents a map, make knowledge navigable, enforce what matters mechanically, and feed every recurring failure back into the harness.
+
+\appendix
+\section{Agent Consumption Checklist}
+When using this paper as context, extract the following operational requirements:
+
+\begin{enumerate}[leftmargin=*]
+  \item Create or repair a short entry map.
+  \item Create indexed cold memory under \texttt{docs/}.
+  \item Give every major component a contract.
+  \item Use active execution plans for multi-step work.
+  \item Make architecture and conventions mechanically checkable where possible.
+  \item Keep verification commands obvious and runnable.
+  \item Maintain quality, known-issue, and decision ledgers.
+  \item Convert repeated failures into docs, tests, lints, scripts, or skills.
+\end{enumerate}
+
+\section{Minimal Component Contract Template}
+\begin{verbatim}
+# Design: <Component Name>
+
+## Purpose
+What this component owns and why it exists.
+
+## Public API
+Headers, exported functions/classes, schemas, CLI commands, or routes.
+
+## Implementation Files
+Files owned by this component and what each does.
+
+## Dependencies
+Allowed dependencies and forbidden dependencies.
+
+## Constraints
+Performance, security, style, error handling, platform, file-size rules.
+
+## Tests
+Unit, integration, acceptance, fixtures, mocks.
+
+## Non-Goals
+What future agents should not implement here.
+
+## Status
+Planned / In progress / Complete / Needs update.
+\end{verbatim}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

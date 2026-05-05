@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If this work helps your agent workflow, please cite it."
+title: "Agent-Legible Repositories: Harness Engineering Patterns for AI-Native Software Development"
+authors:
+  - name: "Noah"
+type: report
+date-released: 2026-05-05
+abstract: "A working synthesis and reusable skill for designing repositories as interfaces for AI coding agents."
+keywords:
+  - AI coding agents
+  - harness engineering
+  - context engineering
+  - software engineering
+  - repository design
+license: CC-BY-4.0
+repository-code: "https://github.com/noahljungberg/agent-legible-repositories"
+url: "https://github.com/noahljungberg/agent-legible-repositories"

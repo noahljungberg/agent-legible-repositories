@@ -1,0 +1,23 @@
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+*.xdv
+
+# Local/editor noise
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Local release prep
+RELEASE_CHECKLIST.md
