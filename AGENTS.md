@@ -21,6 +21,16 @@ This repository contains a research paper, bibliography, checklist, and reusable
 5. Prefer concise, durable wording. The main consumer is often another AI agent.
 6. Run `make paper` when a LaTeX toolchain is available. If it is not available, state that clearly.
 
+## Source Weighting
+
+The field changes in months. When adding or weighing sources, follow the paper's Evidence Policy section:
+
+- Recency first. Sources from roughly the last quarter before the revision carry the argument. Older sources are background only; no recommendation should rest on them alone.
+- Frontier practice second. Prefer first-party engineering reports and docs from Anthropic, OpenAI, and AI-coding companies and forges running current agents at scale, over academic preprints. Recent preprints count as corroboration.
+- Verify every source before citing it: confirm the publication date on the page and copy quotes exactly. Do not cite anything you could not open.
+- Record an access date in each new `references.bib` entry.
+- On each revision, re-run the search and move sources that have aged out into the paper's background section.
+
 ## Concurrency
 
 Other agents may be editing this repository at the same time.

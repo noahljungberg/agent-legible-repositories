@@ -3,6 +3,7 @@
 ## Entry And Routing
 
 - [ ] `AGENTS.md` exists and is short enough to load every session.
+- [ ] `AGENTS.md` routes to deeper docs instead of requiring every edit to read them, and spends its tokens on codebase gotchas.
 - [ ] `AGENTS.md` links to architecture, conventions, design index, active plans, quality, and known issues.
 - [ ] `AGENTS.md` states the concurrency model: other agents may be editing, where in-flight work is visible, how to claim work.
 - [ ] There is a clear session recovery workflow.
@@ -40,24 +41,29 @@
 - [ ] Hub files and public contracts are identified, and changes to them are scheduled first.
 - [ ] No single file must be appended to by every task. Indices, registries, and changelogs are generated.
 - [ ] Lockfiles and generated code are regenerated, never hand-merged.
-- [ ] Changes are small and integrate often. There are no long-lived branches by default.
+- [ ] Expensive shared operations (full rebuilds, setup) run through one owner, not every agent.
+- [ ] Changes are small and integrate often. There are no long-lived branches by default. Large changes are split into ordered stacks.
 
 ## Verification
 
-- [ ] Build/test/lint commands are documented.
+- [ ] A one-line setup command is documented and works in a fresh environment.
+- [ ] Exact build/test/lint commands are documented in the entry file.
 - [ ] Commands are wrapped in scripts when they are nontrivial.
 - [ ] Tests mirror component boundaries.
 - [ ] Domain-specific acceptance tests are documented.
-- [ ] Verification is cheap enough to run often. Output is short and greppable, and a fast mode exists.
+- [ ] Verification is cheap enough to run often. Output is short and greppable.
+- [ ] Large tasks define done as an executable check before implementation.
 - [ ] There is a documented way to verify a branch against the current trunk before declaring done.
-- [ ] Post-merge checks catch semantic collisions between changes that each passed alone.
+- [ ] Post-merge and post-deploy checks catch semantic collisions between changes that each passed alone.
 
 ## Review And Intent
 
-- [ ] Every change carries an intent record: intent, component, scope, non-goals, contract change, evidence, risk.
-- [ ] Evidence points to checks a machine can re-run, not narrative assurances.
+- [ ] Every change carries an intent record: intent, component, scope, non-goals, contract change, what was checked, what remains unverified, risk.
+- [ ] Evidence points to checks a machine or reviewer can re-run, not narrative verdicts.
+- [ ] Scoped review rules live in `AGENTS.md` (root and nested). Mechanical checks stay in CI.
+- [ ] Changes that make instruction files outdated update them in the same change.
 - [ ] Ownership or approval rules route sensitive changes (contracts, security, migrations) to human attention, and let low-risk changes through.
-- [ ] Human rejections ("no") are encoded as lints, tests, non-goals, or anti-patterns.
+- [ ] Human rejections ("no") are encoded as lints, tests, rules, non-goals, or anti-patterns. A mistake seen twice gets a check.
 
 ## Memory And Entropy
 
