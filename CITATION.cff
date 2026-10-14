@@ -4,7 +4,8 @@ title: "Agent-Legible Repositories: Harness Engineering Patterns for AI-Native S
 authors:
   - name: "Noah"
 type: report
-date-released: 2026-05-05
+version: "2026.10"
+date-released: 2026-10-14
 abstract: "A working synthesis and reusable skill for designing repositories as interfaces for AI coding agents."
 keywords:
   - AI coding agents
@@ -12,6 +13,7 @@ keywords:
   - context engineering
   - software engineering
   - repository design
+  - multi-agent coordination
 license: CC-BY-4.0
 repository-code: "https://github.com/noahljungberg/agent-legible-repositories"
 url: "https://github.com/noahljungberg/agent-legible-repositories"

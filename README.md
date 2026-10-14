@@ -12,6 +12,22 @@ The central idea is simple:
 
 Documentation, architecture rules, active plans, tests, scripts, and quality ledgers are not auxiliary material. They are the control surface through which coding agents perceive and change software systems.
 
+## October 2026 Revision
+
+When I wrote the first draft in May 2026, I mostly ran one agent at a time and still read the code it produced. That is no longer how I work. I routinely run ten or more agents against the same repository. I don't write code, and I rarely read it. I review intent and evidence instead.
+
+Anthropic's [Redesigning source control at Anthropic](https://www.anthropic.com/engineering/redesigning-source-control) shows the same shift at much larger scale. Merged changes went from about 2,500 per day to over 30,000 per day in four months, and the bottleneck moved from writing code to infrastructure built for human scale: source control, builds, and CI. GitHub and Cursor have published similar accounts of rebuilding Git infrastructure for agent load. Anthropic built its own version control system. This repo does not suggest you do the same, and neither do they.
+
+Git is still a bottleneck for this way of working, though. It isolates agents well, but it does not tell an agent what the other agents are doing, a checkout is stale as soon as it exists, and two changes can merge cleanly and still break together. Harnesses such as Claude Code and Codex already cover much of this gap. This revision adds the part the repository itself can own:
+
+- Assume concurrency. Every agent should expect the repo to change underneath it.
+- Make in-flight work visible with claims that declare scope.
+- Shard files that every task appends to, and generate indices instead of hand-merging them.
+- Verify the integrated result against the current trunk, not only the branch.
+- Attach an intent record with evidence to every change, because that is what humans now review.
+
+The paper adds a section on designing for concurrent agents. It also has an explicit evidence policy: because the field changes in months, recent first-party reports from Anthropic, OpenAI, and frontier AI-coding companies carry the argument, and older research is background. `SKILL.md` and `CHECKLIST.md` include the new rules.
+
 ## Entry File Compatibility
 
 This repo uses `AGENTS.md` as the generic name for the always-read agent entry file. In other tools or teams, the same role may be served by `CLAUDE.md`, `GEMINI.md`, Cursor rules, Copilot instructions, or another tool-specific file. The important idea is not the exact filename; it is that the repository has a short, maintained entry map that routes agents to the right deeper context.
