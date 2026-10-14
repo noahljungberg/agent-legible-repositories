@@ -21,6 +21,15 @@ This repository contains a research paper, bibliography, checklist, and reusable
 5. Prefer concise, durable wording. The main consumer is often another AI agent.
 6. Run `make paper` when a LaTeX toolchain is available. If it is not available, state that clearly.
 
+## Concurrency
+
+Other agents may be editing this repository at the same time.
+
+- Pull the latest branch before editing and again before committing.
+- Keep each change scoped to the sections or files the task needs. Avoid reflowing or reordering text you did not need to change.
+- Re-read a file before editing it if time has passed since you last read it.
+- Add new references to the end of `paper/references.bib` to keep merges simple.
+
 ## Public-Repo Hygiene
 
 - Do not add private project names, local paths, secrets, tokens, or machine-specific details.
