@@ -4,7 +4,7 @@ Contributions should improve agent legibility: clearer routing, stronger citatio
 
 ## Good Contributions
 
-- Add or update citations to relevant agent-engineering research.
+- Add or update citations to relevant agent-engineering research, weighted by the paper's Evidence Policy: recent first-party reports from frontier labs and AI-coding companies first, older work as background.
 - Clarify the paper without making it longer than necessary.
 - Improve `SKILL.md` so agents can apply the framework more reliably.
 - Add checks or workflows that keep the paper and repo easy to maintain.
