@@ -25,13 +25,15 @@
 \maketitle
 
 \begin{abstract}
-AI coding agents are increasingly capable of producing, testing, reviewing, and maintaining software, yet their effectiveness varies sharply across repositories. This paper argues that the repository itself should be treated as the primary agent interface. Documentation, architecture rules, execution plans, tests, scripts, and quality ledgers are not auxiliary artifacts; they are the control surface through which agents perceive and modify software systems. This paper defines the \emph{agent-legible repository}: a repository whose structure allows an AI coding agent to localize context, obey project constraints, implement bounded changes, verify behavior, and preserve durable knowledge across sessions. This revision adds a second premise: the repository is no longer edited by one agent at a time. It is a shared, moving workspace that many concurrent agents change while any one of them works, and that humans increasingly steer by reviewing intent and evidence rather than reading code. Because the field changes in months, the revision weights evidence explicitly: recent first-party engineering reports from frontier labs and AI-coding companies carry the argument, and older research is treated as background. The paper proposes the Agent-Legible Repository framework, a practical design method for creating or repairing repositories intended for mostly or fully AI-written code, including repository-level conventions that make concurrent agent work legible on top of ordinary Git.
+AI coding agents are increasingly capable of producing, testing, reviewing, and maintaining software, yet their effectiveness varies sharply across repositories. This paper argues that the repository itself should be treated as the primary agent interface. Documentation, architecture rules, execution plans, tests, scripts, and quality ledgers are not auxiliary artifacts; they are the control surface through which agents perceive and modify software systems. This paper defines the \emph{agent-legible repository}: a repository whose structure allows an AI coding agent to localize context, obey project constraints, implement bounded changes, verify behavior, and preserve durable knowledge across sessions. This revision adds a second premise: the repository is no longer edited by one agent at a time. It is a shared, moving workspace that many concurrent agents change while any one of them works, and that humans increasingly steer by reviewing intent and evidence rather than reading code. Because the field changes in months, the revision weights evidence explicitly: recent first-party engineering reports from frontier labs and AI-coding companies carry the argument, and older research is treated as background. The paper proposes the Agent-Legible Repository framework, a practical design method for creating or repairing repositories intended for mostly or fully AI-written code, including repository-level conventions that make concurrent agent work legible on top of ordinary Git, and completion gates: harness hooks that require evidence before an agent may finish a task or open a pull request.
 \end{abstract}
 
 \section*{Agent-Facing Summary}
 This paper is meant to be fed to future coding agents. The operational claim is simple: \textbf{design the repository as the agent's interface}. A good agent-first repository gives the agent a small map, a navigable knowledge base, component contracts, one source of task truth, mechanical architecture rules, cheap verification commands, and a durable ledger of quality and decisions. Do not rely on chat history, human memory, or one giant instruction file. Put durable knowledge in versioned files, keep it indexed, and turn repeated failures into tests, lints, scripts, or docs.
 
 \textbf{Assume you are not alone.} Other agents are probably changing this repository while you work. Treat everything you read as a snapshot that may already be stale. Before you write, find out what is in flight and declare what you will touch. Before you finish, re-sync with the trunk and verify the \emph{integrated} result, not only your branch. Leave a short record of intent and evidence, because the humans steering the repository review intent and evidence, not every line.
+
+\textbf{Expect a gate.} In a well-built repository you cannot finish or open a pull request until the checks pass and your final message states what you verified, what you did not, which history you checked, and how confident you are. Do not weaken tests, checks, or the gate to get through it; report what you could not verify instead.
 
 \section{Introduction}
 Large language model coding agents have moved from code-completion tools toward interactive software workers: they inspect files, run commands, edit code, execute tests, and iterate on failures. Their success, however, is not determined by model capability alone. The same model can behave sharply differently depending on whether the repository provides a coherent operating environment.
@@ -46,6 +48,8 @@ The first draft of this paper (May 2026) implicitly assumed one agent working in
 \textbf{Concurrency is the default.} In the author's own practice, ten or more agents working on one repository at the same time is ordinary. Frontier organizations report the same shift at much larger scale. Anthropic's merged changes grew from about 2,500 per day in May 2026 to over 30,000 per day by September, and it reports that the bottleneck moved to ``all of the developer infrastructure built for human scale: source control, builds, and CI'' \cite{anthropic2026scion}. Its CI job volume grew 25 times in six months, with Claude authoring 80\% of the code \cite{malhotra2026ci}. GitHub reports 7.38 billion commits in September 2026, more than five times a year earlier, and names merges contending on a single trunk reference as a core bottleneck \cite{celenza2026gitinfra}. OpenAI reports that its weekly pull request volume more than doubled since the fourth quarter of 2025 \cite{srikanth2026reviewrules}. Cursor built its own Git storage system because ``Version control is at the core of all of this, and it is possibly the hardest thing to change overnight'' \cite{marti2026gitscale}. Individual agent sessions also run longer: Anthropic reports that Claude works 3.3 times longer per prompt than in March 2026 \cite{segner2026longsessions}, which gives the trunk more time to move under each task.
 
 \textbf{Humans review intent and evidence, not code.} Writing code by hand stopped being necessary first; reading every line is following. Anthropic's source-control team still reviews every change to its system but now examines ``the intent of the change as opposed to reading every line of code'' \cite{anthropic2026scion}. Its migration playbook says to ``Review loop results, not code'' \cite{anthropic2026migrations}. GitHub frames the question for agent patches as ``can a person validate it?'' \cite{abuadas2026yes}, and Augment Code summarizes its review pipeline as ``Agents do the mechanical work. Humans make the consequential decisions'' \cite{utture2026prmerge}. Decisions that remain human are increasingly explicit: Block leaves ``merges to main and deploys to production up to people'' while agents produce thousands of pull requests \cite{anthropic2026block}.
+
+\textbf{Constraints replace reading.} Robert C. Martin, the author of \emph{Clean Code}, describes the same shift from the practitioner side: ``My current strategy is to not read any of the code written by my agents. \ldots\ What I do instead is to surround the agents with extreme constraints,'' naming unit tests, Gherkin tests, QA procedures, quality metrics, mutation testing, and test coverage \cite{martin2026constraints}. Code quality still matters, but now for the agents' sake: ``Messy code slows my agents down,'' so he constrains ``function sizes, cyclomatic complexity, and test coverage'' \cite{martin2026messy}. Anthropic's Claude Code team reports that ``Most review now happens before a PR exists'' \cite{osmani2026codereview}. The author's own practice is the same: a personal gate, enforced by harness hooks, that does not let an agent finish or open a pull request without evidence. This revision includes a domain-neutral version of that gate as a template.
 
 These shifts do not invalidate the framework; they raise its stakes. When many agents share one repository, every gap in routing, contracts, and verification is multiplied by the number of agents. When humans no longer read code, the repository's intent layer (contracts, plans, decisions, and change records) becomes the main surface through which humans steer, and it must be kept true by mechanical checks because no human reader will notice when it drifts.
 
@@ -87,6 +91,15 @@ Verification commands belong in the repository: ``A good practice is to list you
 Review is shifting from reading diffs to checking intent and evidence. OpenAI reports that ``code review can quickly become the bottleneck'' as pull request volume grows, and that scoped review rules written in \texttt{AGENTS.md}, root-level for the repository and nested for services, raised recall of required findings from 58.3\% to 98\% in its evaluations; it advises keeping formatting and other mechanical checks in CI \cite{srikanth2026reviewrules}. Claude Code's review documentation treats instruction files in both directions: if a change makes a \texttt{CLAUDE.md} statement outdated, the reviewer flags that the docs need updating \cite{anthropic2026codereview}. GitHub's ReviewBench starts from the observation that ``No single reviewer, whether human or model, can identify everything worth finding in a pull request'' \cite{zhou2026reviewbench}, and GitHub recommends splitting large agent changes into reviewable stacks \cite{muiruri2026stack}.
 
 Verification is moving past ``CI is green.'' Augment Code's verifier deploys each change, exercises it, and posts evidence rather than a verdict (``The Verifier never posts a pass-or-fail result''); it caught a fix wired to one endpoint but not its streaming twin while CI passed \cite{custer2026verifier}. Its review pipeline asks for ``inspectable proof rather than unsupported verdicts'' \cite{utture2026prmerge}. OpenAI's security agent records what it could not verify rather than implying it did (``If a reliable test can't be created safely, it records what remains unverified'') \cite{aiello2026daybreak}, and Anthropic's guidance for scheduled agents is to ``Report a failed read as unreadable, never as a quiet day'' \cite{martin2026automations}. Cursor extends verification past merge: a bot writes a monitoring plan before merge and compares production signals after deploy \cite{lalkaka2026rollouts}.
+
+\subsection{Gates, Constraints, and Repository Skills}
+Practitioners who no longer read agent code replace reading with enforcement. Martin overloads the test suite so that tampering is hard: ``It's not just one test they have to change. it's a lot of tests. And that makes it harder to change the tests'' \cite{martin2026overload}; and he has ``the agents write the tools that check the constraints. Those tools are deterministic'' \cite{martin2026tools}. Anthropic's Claude Code team runs tests, build, and lint before a pull request exists, ``Then a subagent reviews the diff with fresh context,'' and when the reviewer keeps flagging the same issue, ``we fix it at the source: in the skill, with a lint rule, or with updates to instructional files'' \cite{osmani2026codereview}. Claude Code's guidance describes a Stop hook that ``blocks the turn from ending until it passes'' and a fresh-context reviewer ``so the agent doing the work isn't the one grading it'' \cite{anthropic2026bestpractices}.
+
+Both major harnesses now expose the hooks such gates need. Claude Code hooks can block a turn from ending, block a subagent from stopping, and deny a tool call or escalate it to a person before it runs \cite{anthropic2026hooks}. Codex hooks, generally available since May 2026, support the same blocking decisions for stopping and tool calls, but do not yet support escalating a tool call to a person, require project hooks to be trusted and reviewed, and are explicitly a ``useful guardrail, not a complete enforcement boundary'' \cite{openai2026codexhooks}.
+
+The case for gates is that agents do not always report their own work faithfully. Transluce's analysis of real sessions found that, in around 2\% of sessions for each behavior, ``agents merge PRs to main without authorization, falsely claim approval from review agents, and reason that they shouldn't disable tests before quietly doing so anyway'' \cite{zhang2026misalignment}. Recent research frames the same risk directly: ``A coding agent can earn a passing grade by fixing its code, or by deleting the test that exposes the bug'' \cite{jiang2026hacktrace}. Tests written by the agent also need checking: Anthropic reports that at low effort an agent ``did not check that its new test would have caught the original bug'' \cite{shihipar2026effort}, and Antithesis applies mutation testing to agent-built test harnesses on the premise that ``a test is valuable if it fails when the software is modified to intentionally behave incorrectly'' \cite{padhye2026mutation}. Factory separates the acceptance instrument from the implementer entirely; its validator ``can expand the instrument \ldots\ but cannot weaken or revise it to accommodate what the candidate happens to contain'' \cite{factory2026large}.
+
+Skills that encode these procedures are converging on one repository location. The Agent Skills documentation states that ``\texttt{.agents/skills/} paths have emerged as a widely-adopted convention for cross-client skill sharing'' \cite{agentskills2026clients}. Codex scans \texttt{.agents/skills} from the working directory up to the repository root \cite{openai2026codexskills}, and GitHub Copilot, Cursor, and Gemini CLI also read it \cite{github2026skills,cursor2026skills,google2026geminiskills}. Claude Code reads \texttt{.claude/skills/} and follows symlinked skill folders \cite{anthropic2026skills}, so one canonical folder plus a link serves both.
 
 \subsection{Recent Independent Research}
 Preprints from July 2026 onward corroborate the practitioner picture. Xu et al.\ find co-active agent pull requests in 40.2\% of the repositories they study, with textual conflict rates of 41.7\% for cross-agent pairs versus 19.8\% for same-agent pairs \cite{xu2026agentprs}. A follow-up finds that, in a stratified sample, 47.3\% of textual conflicts occurred even though the two pull requests authored disjoint file sets, because each diff is measured against its own base while the merge is checked against the common merge base; since exact local merge replay is cheap, it recommends simply verifying mergeability \cite{subramanian2026lineage}. NP-Bench observes that agents can each pass their own tests and still produce a broken merged result, and that partitioning work into declared scopes and ordering merges along producer-to-consumer dependencies raised clean integration from 1 of 9 to 9 of 9 scenarios, with a benefit that did not shrink for stronger models \cite{muku2026npbench}. Claim Plane finds that pre-write admission over declared change intents improves reliability, but mostly by serializing work, and fails when declared scopes are incomplete \cite{nikolaev2026claimplane}. CORVUS shows that agent trajectories accumulate stale file snapshots and that re-injecting current file contents reduces tokens while keeping pass rates comparable \cite{zheng2026corvus}. EA-Graph shows that anchoring verification claims to the artifacts they depend on improves judgments after upstream drift \cite{hsu2026eagraph}.
@@ -148,8 +161,12 @@ The design objective is not to maximize documentation volume. It is to maximize 
 
 \textbf{Integration verification.} Verification run against the change combined with the current trunk, as opposed to verification of the branch in isolation.
 
+\textbf{Completion gate.} A harness hook that enforces the definition of done: it blocks an agent from finishing, or from opening a pull request, until required evidence and checks are present.
+
+\textbf{Verification receipt.} The fixed fields an agent must end a code-changing task with: what was verified, what was not, which precedent was checked, and how confident the agent is and why.
+
 \section{The Agent-Legible Repository Framework}
-The framework consists of eleven mutually reinforcing artifacts. The first nine make a repository legible to one agent; the last two make it legible to many agents working at once.
+The framework consists of twelve mutually reinforcing artifacts. The first nine make a repository legible to one agent; the next two make it legible to many agents working at once; the last enforces the floor every agent must meet.
 
 \subsection{Entry Map}
 The entry map should be concise. It answers: What is this repo? What is the current workflow? What commands set it up and verify work? Where are architecture, conventions, design docs, active plans, and known issues? It should not duplicate every component detail; current frontier guidance is to keep it lightweight and spend its tokens on the codebase's gotchas \cite{shihipar2026context}, and to make it a router rather than a reading list that every edit must work through \cite{provencher2026astra}. In a concurrent repository it should also state the concurrency model in a few lines: that other agents may be editing, where in-flight work is visible, how to claim work, and how to verify against the current trunk.
@@ -198,6 +215,8 @@ Documentation alone is weak. Important rules should become mechanical checks: de
 
 Mechanical invariants are also how human judgment scales across concurrent agents. When an engineer has to tell an agent ``no'' because it violated a system constraint \cite{anthropic2026scion}, that refusal should be encoded once, as a lint, test, contract non-goal, or anti-pattern, so that the next ten agents do not need to hear it again. Current practice does exactly this: Cursor's coordinator adds a lint rule when it sees the same mistake twice \cite{cursor2026projects}, and Anthropic's migration rulebook grows while ``the code never gets hand-patched against it'' \cite{anthropic2026migrations}.
 
+Structural quality budgets belong here too. Humans may no longer read the code, but agents do, and messy code slows them down \cite{martin2026messy}. Bound function size, complexity, duplication, and coverage mechanically, so that agents cannot create the tangles they later fail to untangle.
+
 \subsection{Verification Harness}
 Every repository should expose a small set of commands for setup, build, test, lint, typecheck, formatting, and domain-specific acceptance. The commands should be listed exactly in the entry map so agents do not infer them \cite{deoliveira2026verification}; agents running in fresh cloud environments only know what the repository says \cite{osmani2026cloud}, and a documented one-line setup command is a basic readiness criterion \cite{factory2026sandboxes}. Commands should be cheap enough to run frequently, and their output short and greppable because it becomes agent context. Where a task is large, define an executable standard of completion before implementation starts, so that the definition of done cannot quietly shrink to whatever was built \cite{factory2026large}.
 
@@ -210,6 +229,8 @@ Agents imitate local examples. Repositories should include gold-standard example
 \subsection{Skill Layer}
 The repository should have reusable skills for repeated workflows: adding a component, writing a design doc, performing a code review, verifying a change, debugging a failing test, creating a migration, or auditing documentation. Skills should be specific, with short descriptions and a root file that routes to supporting docs and scripts \cite{provencher2026astra}. A flat list of dozens of similar skills creates selection burden. Shared verification and review skills turn personal checks into team infrastructure \cite{deoliveira2026verification}.
 
+Keep repository skills in \texttt{.agents/skills/<name>/SKILL.md}, the emerging cross-tool location \cite{agentskills2026clients,openai2026codexskills}, and link \texttt{.claude/skills/<name>} to the same folder for Claude Code \cite{anthropic2026skills}. Give each skill the standard \texttt{name} and \texttt{description} frontmatter, and keep tool-specific metadata in sidecar files. Checked-in skills can change what agents are allowed to do, so review them like code.
+
 \subsection{Coordination Surface}
 A concurrent repository needs one visible place where in-flight work is declared. If all agents share a harness with a task list and file-locked claiming, or a coordinator that assigns work, use it \cite{anthropic2026agentteams,cursor2026projects,openai2026agentsapi}. If agents share only the repository, commit a small claim file per task, for example the header of the task's file in \texttt{docs/plans/active/}, stating the task, the claiming session, the expected scope (paths, public interfaces, generated outputs), and when it started. Pushing a new claim to the trunk is an atomic test: if another agent already claimed the task, the push fails and the second agent picks other work, a pattern used in earlier parallel-agent experiments \cite{carlini2026compiler}. Shared context files that agents add to as they learn serve the same role for knowledge that claims serve for work \cite{cursor2026projects}.
 
@@ -217,6 +238,9 @@ Claims are coordination hints, not locks on the whole repository. They let agent
 
 \subsection{Intent Records}
 Every merged change should carry a short intent record: what the change is for, which component and contract it touches, what it deliberately does not do, what was checked, and what remains unverified. This matches current frontier guidance that agents end work with ``a short handoff covering what changed, what was checked, and what still needs attention'' \cite{openai2026gpt6guide}. Intent records are the surface that humans review when they no longer read every line \cite{anthropic2026scion}, and the surface that later agents read to understand why the code is the way it is \cite{lewi2026runme}. They should point to evidence a machine or reviewer can re-check (test names, command output, CI runs, traces) rather than narrative verdicts \cite{utture2026prmerge,custer2026verifier}, and say plainly what could not be verified \cite{aiello2026daybreak,martin2026automations}.
+
+\subsection{Completion Gate}
+Instructions ask; gates enforce. A completion gate is a hook in the agent harness that turns the definition of done into something an agent cannot skip. At the end of a turn it checks that an agent which changed files has written a verification receipt. Before a pull request is created it runs the repository's full verification and escalates changes to protected acceptance specs to a person. Section~\ref{sec:gates} describes what a gate should check and where each check belongs.
 
 \begin{table}[h]
 \centering
@@ -234,7 +258,8 @@ Quality ledger & Trust map & Grades, risks, stale areas, test gaps \\
 Scripts/tests & Feedback & Setup, build, test, lint, acceptance \\
 Skills & Reuse & Bounded operational procedures \\
 Claims & Coordination & Task, owner, scope, start time \\
-Intent records & Review surface & Purpose, scope, checked, unverified \\
+Intent records & Review surface & Purpose, scope, verified, unverified \\
+Completion gate & Enforcement & Receipt, pre-PR checks, protected specs \\
 \bottomrule
 \end{tabular}
 \caption{Core artifacts in an agent-legible repository.}
@@ -281,6 +306,51 @@ Git does not give agents awareness. A branch hides in-flight intent until it is 
 \subsection{What Not To Do}
 Do not build a version control system unless the repository is genuinely at the scale where storage, transfer, and reference updates dominate; the organizations that have done so are frontier labs and forges serving enormous agent load \cite{anthropic2026scion,celenza2026gitinfra,marti2026gitscale}. Do not try to solve coordination by serializing everything through one lock, one plan file, or one merge queue; that recovers correctness by giving up the parallelism that motivated running many agents \cite{nikolaev2026claimplane}. Do not over-engineer the setup either: simple, clear instructions have outperformed elaborate ones in parallel migrations \cite{openai2026asana}. And do not let agents coordinate only through transient chat; current harnesses converge on durable shared state such as task lists, shared context files, and on-disk queues \cite{anthropic2026agentteams,cursor2026projects,anthropic2026migrations}. Prefer durable, structured, verifiable state: claims, contracts, intent records, and checks.
 
+\section{Gates: Constraints Instead of Reading}
+\label{sec:gates}
+When people stop reading code, the constraints around the code become the review. This section describes how to build them so that they hold under many concurrent agents.
+
+\subsection{Layers of Enforcement}
+Each constraint should live at the cheapest layer that can enforce it, and the important ones should be repeated at a layer the agent cannot reach.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l L L}
+\toprule
+Layer & Strength & Holds \\
+\midrule
+Instructions & Advisory; read every session & Commands, gotchas, routing, the receipt format \\
+Skills & Procedure; loaded on demand & How to reproduce, verify, check precedent, and finish \\
+Hooks & Enforced in the harness; per tool & End-of-turn receipt; pre-pull-request checks; escalation of protected changes and merges \\
+CI and branch protection & Enforced on the server & The full check suite; required approvals; protected paths \\
+Post-merge and deploy & Enforced on the result & Semantic collisions; production signals \\
+\bottomrule
+\end{tabularx}
+\caption{Layers of enforcement. Hooks catch shortcuts early; CI is the boundary an agent cannot route around.}
+\end{table}
+
+Hooks are fast feedback, not a security boundary: an agent with shell access can sometimes avoid them, and Codex documents its tool hooks as a guardrail rather than complete enforcement \cite{openai2026codexhooks}. CI, branch protection, and required approvals remain the hard boundary.
+
+\subsection{What a Gate Checks}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Only this agent's changes.} Record a baseline (commit and pre-existing uncommitted files) when a session or subagent starts, and judge only what changed since. Compare the whole tree, not just the files touched through edit tools, so edits made through shell commands and commits count. Key the baseline by session and subagent so concurrent agents do not share it.
+  \item \textbf{A verification receipt.} An agent that changed files must end with \texttt{VERIFIED}, \texttt{UNVERIFIED}, \texttt{PRECEDENT}, and \texttt{CONFIDENCE} fields. The receipt must always be satisfiable honestly: an agent that could not run a check says so under \texttt{UNVERIFIED}. A gate that can only be passed by succeeding creates pressure to fabricate.
+  \item \textbf{The full check before a pull request.} Creating a pull request runs the repository's own verification command first and is denied if it fails. Words cannot satisfy this check.
+  \item \textbf{Protected acceptance specs.} Human-approved acceptance tests and Gherkin scenarios are the part of the system people still read. Changes to them escalate to a person, so an agent cannot weaken the standard it is measured against \cite{factory2026large}.
+  \item \textbf{Tests that bite.} A new test should be seen failing before the fix passes it; mutation testing checks that tests fail when behavior is broken; many overlapping tests make tampering costly \cite{shihipar2026effort,padhye2026mutation,martin2026overload}.
+  \item \textbf{Structural budgets.} Function size, complexity, duplication, and coverage limits keep the code navigable for the agents that maintain it \cite{martin2026messy}.
+  \item \textbf{Precedent.} Before deleting or redesigning existing behavior, the agent checks the history and pull request that introduced it, and treats unexplained guards, timeouts, and retries as intentional until history says otherwise. This is the mechanical form of a human engineer saying ``no'' \cite{anthropic2026scion}.
+  \item \textbf{No bypass.} Deleting assertions, skipping tests, raising timeouts, weakening types or validation, and editing the gate itself are forbidden without explicit human approval, and merges and deploys stay with people \cite{anthropic2026block}.
+  \item \textbf{A fresh reviewer.} For nontrivial changes, a reviewer in a fresh context sees only the final diff, the acceptance behavior, and the evidence \cite{osmani2026codereview,anthropic2026bestpractices}.
+  \item \textbf{Fail closed, but never trap.} If the gate itself errors, it blocks, then releases after one retry; unrelated tool calls are never blocked, and a gate whose script is missing does nothing. A gate that can wedge a session will be switched off.
+\end{enumerate}
+
+\subsection{Personal and Repository Gates}
+Experienced practitioners shape their own harnesses and keep tuning them. A gate therefore has two owners. The repository owns what is true for every contributor: exact commands, protected paths, the receipt format, and CI. A person may add a stricter personal gate on top, with repository-specific variants that route to each repository's commands, but it should never override the repository's own instructions. The repository's job is to make any gate easy to plug in: if the commands, protected paths, and receipt format are written down, a personal or team gate can enforce them without guessing.
+
+In a test of the template that accompanies this paper, a headless Claude Code session asked to edit a file and reply only ``done'' was blocked until it produced a receipt, and the receipt recorded that it had not been able to run the program; a follow-up question in the same session needed no receipt. A request to open a pull request while the configured check failed was denied before the command ran. A fresh-context review of the template found eight defects, including ways to satisfy the receipt with echoed text and to trap a session, which were fixed with a test for each. This is a demonstration, not evidence of effectiveness at scale.
+
 \section{Operational Method}
 \subsection{Greenfield Setup}
 For a new repository, create the harness before the code grows:
@@ -295,6 +365,7 @@ For a new repository, create the harness before the code grows:
   \item Use one plan file per task in \texttt{docs/plans/active/}, with a claim header, and require one-task-at-a-time execution per agent.
   \item Track quality, known issues, and decisions in versioned files, one entry per file where many agents will write.
   \item Define the intent-record format and scoped review rules.
+  \item Install a completion gate: a receipt at the end of each turn, the full check before pull requests, and protected acceptance specs. Put skills in \texttt{.agents/skills/}.
 \end{enumerate}
 
 \subsection{Brownfield Repair}
@@ -310,6 +381,7 @@ For an existing repository, do not begin by documenting everything. Begin by red
   \item Add mechanical checks for the most damaging recurring mistakes.
   \item Create a quality ledger and known-issues file.
   \item If several agents already work in the repository, find the contention hotspots (files most often involved in conflicts or touched by unrelated changes, and expensive shared operations) and shard, generate, schedule, or serialize them first.
+  \item Add a completion gate once verification commands exist, starting with the receipt and the pre-pull-request check.
 \end{enumerate}
 
 \subsection{Default Agent Protocol}
@@ -326,7 +398,8 @@ A future coding agent should follow this loop, scaling the reading steps to the 
   \item Make the smallest change satisfying the task. Re-read any file before editing it if others may have changed it.
   \item Run the documented verification commands.
   \item Re-sync with the trunk, resolve conflicts, and re-run affected verification on the integrated result.
-  \item Write the intent record with evidence and anything left unverified; update docs, plan, quality ledger, or known issues only when the result changes durable project knowledge.
+  \item Write the intent record and end with the verification receipt; update docs, plan, quality ledger, or known issues only when the result changes durable project knowledge.
+  \item Before opening a pull request, run the full check; expect the gate to deny the request if it fails.
   \item Release the claim and stop after the requested task is complete.
 \end{enumerate}
 
@@ -355,6 +428,16 @@ For concurrent repositories, add:
   \item \textbf{Human attention}: share of changes that required human review, and whether that share tracks risk.
 \end{itemize}
 
+For gated repositories, add:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Gate pass rate}: share of turns and pull requests that pass the gate on the first attempt.
+  \item \textbf{Escaped defects}: failures after merge in changes that passed the gate.
+  \item \textbf{Tampering}: attempts to edit tests, assertions, protected specs, or the gate itself.
+  \item \textbf{Test strength}: mutation score of agent-written tests.
+  \item \textbf{Receipt fidelity}: share of receipts whose \texttt{VERIFIED} claims match what actually ran.
+\end{itemize}
+
 A practical experiment is to run the same set of coding tasks against two versions of a repository: baseline and agent-legible. Compare task success, tokens, files opened, verification failures, and human interventions. For concurrency, run the same task set with one agent and with several agents in parallel, and compare integrated success, conflicts, and wall-clock time.
 
 \section{Limitations}
@@ -364,8 +447,10 @@ The evidence policy carries its own limits. Weighting recent first-party reports
 
 The concurrency guidance carries additional caveats. Claims can become their own bottleneck if they are too coarse, and incomplete claims can block legitimate work. Harness capabilities for coordination are changing quickly, so a repository should depend on the repository-layer conventions here rather than on any one harness feature. Finally, reviewing intent instead of code is only as safe as the evidence behind the intent; it depends on strong verification and post-merge checks.
 
+Gates have limits of their own. A receipt check verifies that the fields are present, not that they are true; CI and fresh reviewers must still check the claims. Hooks are harness-specific, change quickly, and can sometimes be avoided by an agent with shell access. Slow gates tax every turn, so the end-of-turn gate should stay cheap and expensive checks belong before pull requests and in CI. And no first-party study yet measures how much gates reduce escaped defects; the evidence here is practitioner reports and demonstrations.
+
 \section{Conclusion}
-AI-native software development changes the role of repository design. The repository is no longer only storage for code; it is the agent's perception layer, memory system, task board, rulebook, and feedback environment. It is also, increasingly, a shared workspace that many agents change at once and that humans steer through intent and evidence rather than through reading code. Agent-legible repositories reduce wasted context, constrain implementation, preserve project memory, make verification routine, and make concurrent work visible. The core prescription is simple: give agents a map, make knowledge navigable, enforce what matters mechanically, declare work before doing it, verify the integrated result, and fix the process whenever it produces a recurring failure.
+AI-native software development changes the role of repository design. The repository is no longer only storage for code; it is the agent's perception layer, memory system, task board, rulebook, and feedback environment. It is also, increasingly, a shared workspace that many agents change at once and that humans steer through intent and evidence rather than through reading code. Agent-legible repositories reduce wasted context, constrain implementation, preserve project memory, make verification routine, and make concurrent work visible. The core prescription is simple: give agents a map, make knowledge navigable, enforce what matters mechanically, declare work before doing it, verify the integrated result, gate completion on evidence, and fix the process whenever it produces a recurring failure.
 
 \appendix
 \section{Agent Consumption Checklist}
@@ -385,6 +470,8 @@ When using this paper as context, extract the following operational requirements
   \item Shard or generate contention hotspots; never hand-merge generated files; serialize expensive shared operations.
   \item Verify the integrated result against the current trunk, not only the branch.
   \item Attach an intent record with re-checkable evidence and anything left unverified to every change.
+  \item Install a completion gate: end-of-turn receipt, full check before pull requests, protected acceptance specs, merges reserved for people.
+  \item Keep repository skills in \texttt{.agents/skills/}, linked from \texttt{.claude/skills/}.
 \end{enumerate}
 
 \section{Minimal Component Contract Template}
@@ -443,9 +530,23 @@ Intent: <one sentence: what this change is for>
 Component: <component and contract touched>
 Scope: <what changed>; Not changed: <deliberate non-goals>
 Contract change: none | <API change and affected consumers>
-Checked: <commands run against trunk at <commit>, with results>
-Unverified: <what could not be checked, and why>
+VERIFIED: <commands run against trunk at <commit>, with results>
+UNVERIFIED: <what could not be checked, and why, or none>
+PRECEDENT: <commits or pull requests checked, or none>
+CONFIDENCE: <low|medium|high> - <evidence-based reason>
 Risk: low (docs/tests/comments) | normal | sensitive (<why>)
+\end{verbatim}
+
+\section{Completion Gate Template}
+The repository that accompanies this paper includes a domain-neutral gate in \nolinkurl{templates/completion-gate/}: a dependency-free Python hook script for Claude Code and Codex, hook configuration for both, a gate configuration file, and a \texttt{completion-gate} skill. An installer copies them into a target repository without overwriting existing files:
+
+\begin{verbatim}
+.agents/gate/gate.py                   hook script (self-test included)
+.agents/gate/config.json               receipt, pr_check, protected paths
+.agents/skills/completion-gate/        workflow skill
+.claude/skills/completion-gate         link to the skill for Claude Code
+.claude/settings.json                  Claude Code hooks
+.codex/hooks.json                      Codex hooks
 \end{verbatim}
 
 \bibliographystyle{plain}

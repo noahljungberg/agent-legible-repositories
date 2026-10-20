@@ -1,0 +1,4 @@
+interface:
+  display_name: "Completion Gate"
+  short_description: "Evidence-first workflow with verification receipts"
+  default_prompt: "Use $completion-gate to implement and verify this change in the current repository."

@@ -6,6 +6,18 @@ on:
   workflow_dispatch:
 
 jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run completion gate self-test
+        run: make gate-test
+
+      - name: Check citations and committed files
+        run: python3 -I scripts/check_repo.py
+
   build-paper:
     runs-on: ubuntu-latest
     steps:

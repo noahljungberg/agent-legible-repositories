@@ -1,3 +1,8 @@
+---
+name: agent-legible-repositories
+description: Design, repair, or audit a repository so AI coding agents can navigate, change, and verify it, including when many agents work at once. Use when creating a repository, preparing an existing one for agent work, writing AGENTS.md, adding repository skills or a completion gate, or grading agent-legibility.
+---
+
 # Skill: Agent-Legible Repository Design
 
 Use this skill when creating, repairing, or auditing a repository so AI coding agents can implement most or all code with minimal wasted context and strong verification, including when many agents work in the repository at the same time.
@@ -31,6 +36,8 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 - `tests/`: verification harness aligned with component boundaries.
 - Intent-record format: a short template for commit messages or pull request descriptions.
 - Review rules: scoped rules in `AGENTS.md` (root for the repo, nested for services) for what a reviewer would otherwise have to ask. Keep formatting and other mechanical checks in CI.
+- `.agents/skills/<name>/SKILL.md`: repository skills in the cross-tool location, with `name` and `description` frontmatter. Link `.claude/skills/<name>` to the same folder for Claude Code.
+- Completion gate: hooks that block finishing without a verification receipt and block pull requests until the full check passes. A template lives in `templates/completion-gate/` of this skill's repository.
 
 ## Greenfield Workflow
 
@@ -43,6 +50,7 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 7. Use one plan file per task for any task that spans more than one obvious edit.
 8. Track quality, known issues, and decisions from the first nontrivial implementation, one entry per file where many agents write.
 9. Define the intent-record format and scoped review rules.
+10. Install a completion gate and put skills in `.agents/skills/`.
 
 ## Brownfield Repair Workflow
 
@@ -55,6 +63,7 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 7. Add mechanical checks for the most damaging recurring mistakes.
 8. Add `docs/QUALITY.md` and known issues so agents know what is trustworthy.
 9. If several agents already work here, find contention hotspots (files most often in conflicts or touched by unrelated changes) and shard, generate, or schedule them first.
+10. Once verification commands exist, add a completion gate: the receipt first, then the pre-pull-request check.
 
 ## Component Design Docs
 
@@ -98,9 +107,26 @@ Humans increasingly review intent and evidence instead of reading every line. Ev
 - Component: the component and contract it touches.
 - Scope and non-goals: what changed, and what deliberately did not.
 - Contract change: none, or the API change and its affected consumers.
-- Checked: commands run against which trunk commit, with results. Point to evidence a machine or reviewer can re-check (tests, output, traces), not verdicts.
-- Unverified: what could not be checked, and why. Never imply a check that did not run.
+- VERIFIED: commands run against which trunk commit, with results. Point to evidence a machine or reviewer can re-check (tests, output, traces), not verdicts.
+- UNVERIFIED: what could not be checked, and why. Never imply a check that did not run.
+- PRECEDENT: commits or pull requests checked before changing existing behavior, or none.
+- CONFIDENCE: low, medium, or high, with the evidence-based reason.
 - Risk: low (docs, tests, comments), normal, or sensitive (public contracts, security, migrations), so human attention goes where it matters.
+
+## Completion Gate
+
+People who no longer read code replace reading with constraints. Enforce the definition of done in the harness, not only in prose:
+
+- At the end of each turn, block an agent that changed files until its final message has the receipt fields: `VERIFIED`, `UNVERIFIED`, `PRECEDENT`, `CONFIDENCE`. Judge only changes since the session or subagent started, comparing the whole tree so shell edits and commits count.
+- Keep the receipt honestly satisfiable: an agent that could not run a check says so under `UNVERIFIED`. Cap repeated blocks.
+- Before a pull request is created, run the repository's full check and deny on failure.
+- Escalate changes to protected acceptance specs (Gherkin, acceptance tests) to a person. Reserve merges and deploys for people.
+- Make tests bite: see a new test fail before the fix, use mutation testing where it pays, and keep overlapping tests so tampering is costly.
+- Bound function size, complexity, and coverage mechanically. Messy code slows agents down.
+- Before changing existing behavior, check the commit and pull request that introduced it.
+- Forbid bypasses without human approval: deleting assertions, skipping tests, raising timeouts, weakening types, editing the gate.
+- For nontrivial diffs, have a fresh-context reviewer see only the final diff, acceptance behavior, and evidence.
+- Fail closed when the gate errors, but release after one retry and never block unrelated tool calls: a gate that can wedge a session will be switched off. Repeat the important checks in CI: hooks are fast feedback, not a security boundary.
 
 ## Agent Task Protocol
 
@@ -116,8 +142,9 @@ When implementing a change in an agent-legible repo, scale the reading steps to 
 8. Make the smallest change satisfying the task. Re-read files that others may have changed before editing them.
 9. Run documented verification commands.
 10. Re-sync with trunk, resolve conflicts, and re-run affected verification on the integrated result.
-11. Write the intent record, including what remains unverified. Update plan/docs/quality only when durable project knowledge changed, and update instruction files in the same change that makes them outdated.
-12. Release the claim and stop after the requested task is complete.
+11. Write the intent record and end with the verification receipt. Update plan/docs/quality only when durable project knowledge changed, and update instruction files in the same change that makes them outdated.
+12. Before opening a pull request, run the full check; expect the gate to deny it otherwise.
+13. Release the claim and stop after the requested task is complete.
 
 ## Quality Rules
 
@@ -139,7 +166,8 @@ Return:
 1. Current agent-legibility grade.
 2. Highest-impact missing artifacts.
 3. Concurrency readiness: setup command, claim mechanism, contention hotspots, integration verification, intent-record format, review rules.
-4. Concrete file creation/edit plan.
-5. Mechanical checks to add.
-6. Verification commands to standardize.
-7. First three repairs to perform.
+4. Gate readiness: skill location, receipt, pre-pull-request check, protected specs, structural budgets, CI parity.
+5. Concrete file creation/edit plan.
+6. Mechanical checks to add.
+7. Verification commands to standardize.
+8. First three repairs to perform.

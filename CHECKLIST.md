@@ -65,6 +65,18 @@
 - [ ] Ownership or approval rules route sensitive changes (contracts, security, migrations) to human attention, and let low-risk changes through.
 - [ ] Human rejections ("no") are encoded as lints, tests, rules, non-goals, or anti-patterns. A mistake seen twice gets a check.
 
+## Gates And Skills
+
+- [ ] Repository skills live in `.agents/skills/<name>/SKILL.md` with `name` and `description` frontmatter, linked from `.claude/skills/`.
+- [ ] A completion gate blocks finishing without a receipt: `VERIFIED`, `UNVERIFIED`, `PRECEDENT`, `CONFIDENCE`.
+- [ ] The gate judges only changes since the session started, including shell edits and commits.
+- [ ] Pull request creation runs the full check first and is denied on failure.
+- [ ] Protected acceptance specs escalate to a person. Merges and deploys stay with people.
+- [ ] New tests are seen failing before the fix. Mutation testing runs where it pays.
+- [ ] Function size, complexity, and coverage are bounded mechanically.
+- [ ] Bypasses (deleted assertions, skipped tests, raised timeouts, edited gate) need human approval.
+- [ ] Important gate checks are repeated in CI and branch protection.
+
 ## Memory And Entropy
 
 - [ ] `docs/QUALITY.md` records trust level by component.

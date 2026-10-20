@@ -1,0 +1,16 @@
+{
+  "receipt": ["VERIFIED:", "UNVERIFIED:", "PRECEDENT:", "CONFIDENCE:"],
+  "pr_check": "make check",
+  "pr_check_timeout": 540,
+  "protected": [
+    ".agents/gate/*",
+    ".claude/settings.json",
+    ".codex/hooks.json",
+    "templates/completion-gate/gate.py",
+    "scripts/check_repo.py",
+    ".github/workflows/*"
+  ],
+  "base_ref": "origin/main",
+  "human_merge": true,
+  "max_stop_blocks": 3
+}

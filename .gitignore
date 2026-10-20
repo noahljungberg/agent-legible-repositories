@@ -11,6 +11,7 @@
 *.synctex.gz
 *.toc
 *.xdv
+paper/*.pdf
 
 # Local/editor noise
 .DS_Store

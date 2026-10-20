@@ -28,6 +28,12 @@ Git is still a bottleneck for this way of working, though. It isolates agents we
 
 The paper adds a section on designing for concurrent agents. It also has an explicit evidence policy: because the field changes in months, recent first-party reports from Anthropic, OpenAI, and frontier AI-coding companies carry the argument, and older research is background. `SKILL.md` and `CHECKLIST.md` include the new rules.
 
+### Gates instead of reading
+
+If nobody reads the code, the constraints around it become the review. Robert C. Martin put it plainly: he does not read his agents' code; he surrounds them with tests, Gherkin scenarios, mutation testing, coverage, and quality metrics, and keeps function size and complexity tightly bounded because messy code slows agents down. I work the same way, with a personal gate enforced by hooks: an agent cannot finish without saying what it verified and what it did not, and cannot open a pull request until the checks pass.
+
+The paper now has a section on gates, and [`templates/completion-gate/`](templates/completion-gate/) is a domain-neutral version of that gate for Claude Code and Codex. Repository skills belong in `.agents/skills/`, the cross-tool location, linked from `.claude/skills/` for Claude Code. This repository runs the same gate on itself: see the Completion Gate section of [`AGENTS.md`](AGENTS.md).
+
 ## Entry File Compatibility
 
 This repo uses `AGENTS.md` as the generic name for the always-read agent entry file. In other tools or teams, the same role may be served by `CLAUDE.md`, `GEMINI.md`, Cursor rules, Copilot instructions, or another tool-specific file. The important idea is not the exact filename; it is that the repository has a short, maintained entry map that routes agents to the right deeper context.
@@ -38,6 +44,7 @@ This repo uses `AGENTS.md` as the generic name for the always-read agent entry f
 - [`paper/references.bib`](paper/references.bib) - BibTeX references.
 - [`SKILL.md`](SKILL.md) - operational skill distilled from the paper.
 - [`CHECKLIST.md`](CHECKLIST.md) - quick audit checklist for greenfield and brownfield repositories.
+- [`templates/completion-gate/`](templates/completion-gate/) - installable completion gate (hooks, config, and skill) for Claude Code and Codex.
 - [`AGENTS.md`](AGENTS.md) - instructions for future coding agents working on this repo.
 
 ## Who This Is For
@@ -56,6 +63,10 @@ paper/references.bib
 ```
 
 For a quick human or agent audit, use [`CHECKLIST.md`](CHECKLIST.md).
+
+To install `SKILL.md` as a skill, copy it to `.agents/skills/agent-legible-repositories/SKILL.md` in the target repository, or to your user-level skills folder.
+
+To add a completion gate to a repository, run `templates/completion-gate/install.sh /path/to/repo` and read [`templates/completion-gate/README.md`](templates/completion-gate/README.md).
 
 ## Build The Paper
 

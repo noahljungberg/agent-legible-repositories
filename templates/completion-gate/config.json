@@ -1,0 +1,8 @@
+{
+  "receipt": ["VERIFIED:", "UNVERIFIED:", "PRECEDENT:", "CONFIDENCE:"],
+  "pr_check": null,
+  "pr_check_timeout": 540,
+  "protected": [],
+  "human_merge": true,
+  "max_stop_blocks": 3
+}

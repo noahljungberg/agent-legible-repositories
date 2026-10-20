@@ -11,6 +11,7 @@ This repository contains a research paper, bibliography, checklist, and reusable
 - Operational skill: `SKILL.md`
 - Audit checklist: `CHECKLIST.md`
 - Build workflow: `.github/workflows/build-paper.yml`
+- Completion gate template: `templates/completion-gate/` (keep it domain-neutral and dependency-free)
 
 ## Workflow For Agents
 
@@ -40,6 +41,15 @@ Other agents may be editing this repository at the same time.
 - Re-read a file before editing it if time has passed since you last read it.
 - Add new references to the end of `paper/references.bib` to keep merges simple.
 
+## Completion Gate
+
+This repository runs its own completion gate: `.agents/gate/` (the script links to `templates/completion-gate/gate.py`), with hooks in `.claude/settings.json` and `.codex/hooks.json`. Load the `completion-gate` skill before changing files.
+
+- If you change files, end your final message with `VERIFIED:`, `UNVERIFIED:`, `PRECEDENT:`, and `CONFIDENCE:` lines. Put anything you could not run, such as the paper build without LaTeX, under `UNVERIFIED`.
+- Opening a pull request runs `make check` first.
+- Changes to the gate, the hooks, `scripts/check_repo.py`, or CI workflows need human approval.
+- Repository skills live in `.agents/skills/`, linked from `.claude/skills/`.
+
 ## Public-Repo Hygiene
 
 - Do not add private project names, local paths, secrets, tokens, or machine-specific details.
@@ -50,7 +60,9 @@ Other agents may be editing this repository at the same time.
 ## Verification
 
 ```bash
-make paper
+make check
 ```
+
+`make check` runs the gate self-test and `scripts/check_repo.py` (citations, access dates, committed files), and builds the paper when LaTeX is available.
 
 If LaTeX is unavailable locally, rely on the GitHub Actions workflow after pushing.
