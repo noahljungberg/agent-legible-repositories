@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\" --harness claude", "timeout": 30}]}
+    ],
+    "SubagentStart": [
+      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\" --harness claude", "timeout": 30}]}
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*__(create|merge)_pull_request",
+        "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\" --harness claude", "timeout": 600, "onFailure": "block"}]
+      }
+    ],
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\" --harness claude", "timeout": 60}]}
+    ],
+    "SubagentStop": [
+      {"hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\" --harness claude", "timeout": 60}]}
+    ]
+  }
+}

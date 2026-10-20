@@ -6,6 +6,15 @@ on:
   workflow_dispatch:
 
 jobs:
+  gate-self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run completion gate self-test
+        run: make gate-test
+
   build-paper:
     runs-on: ubuntu-latest
     steps:

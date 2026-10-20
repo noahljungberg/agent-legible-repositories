@@ -5,7 +5,7 @@ authors:
   - name: "Noah"
 type: report
 version: "2026.10"
-date-released: 2026-10-14
+date-released: 2026-10-20
 abstract: "A working synthesis and reusable skill for designing repositories as interfaces for AI coding agents."
 keywords:
   - AI coding agents

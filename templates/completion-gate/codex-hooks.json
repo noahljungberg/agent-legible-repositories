@@ -1,0 +1,23 @@
+{
+  "description": "Completion gate: verification receipts before finishing, checks before pull requests.",
+  "hooks": {
+    "SessionStart": [
+      {"hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/gate/gate.py\" --harness codex", "timeout": 30, "statusMessage": "Loading completion gate..."}]}
+    ],
+    "SubagentStart": [
+      {"hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/gate/gate.py\" --harness codex", "timeout": 30}]}
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*__(create|merge)_pull_request",
+        "hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/gate/gate.py\" --harness codex", "timeout": 600, "statusMessage": "Running completion gate..."}]
+      }
+    ],
+    "Stop": [
+      {"hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/gate/gate.py\" --harness codex", "timeout": 60, "statusMessage": "Checking verification receipt..."}]}
+    ],
+    "SubagentStop": [
+      {"hooks": [{"type": "command", "command": "python3 \"$(git rev-parse --show-toplevel)/.agents/gate/gate.py\" --harness codex", "timeout": 60}]}
+    ]
+  }
+}

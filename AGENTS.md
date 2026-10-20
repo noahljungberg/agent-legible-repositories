@@ -11,6 +11,7 @@ This repository contains a research paper, bibliography, checklist, and reusable
 - Operational skill: `SKILL.md`
 - Audit checklist: `CHECKLIST.md`
 - Build workflow: `.github/workflows/build-paper.yml`
+- Completion gate template: `templates/completion-gate/` (keep it domain-neutral and dependency-free)
 
 ## Workflow For Agents
 
@@ -51,6 +52,7 @@ Other agents may be editing this repository at the same time.
 
 ```bash
 make paper
+make gate-test
 ```
 
 If LaTeX is unavailable locally, rely on the GitHub Actions workflow after pushing.
