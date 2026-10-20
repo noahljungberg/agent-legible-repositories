@@ -343,13 +343,13 @@ Hooks are fast feedback, not a security boundary: an agent with shell access can
   \item \textbf{Precedent.} Before deleting or redesigning existing behavior, the agent checks the history and pull request that introduced it, and treats unexplained guards, timeouts, and retries as intentional until history says otherwise. This is the mechanical form of a human engineer saying ``no'' \cite{anthropic2026scion}.
   \item \textbf{No bypass.} Deleting assertions, skipping tests, raising timeouts, weakening types or validation, and editing the gate itself are forbidden without explicit human approval, and merges and deploys stay with people \cite{anthropic2026block}.
   \item \textbf{A fresh reviewer.} For nontrivial changes, a reviewer in a fresh context sees only the final diff, the acceptance behavior, and the evidence \cite{osmani2026codereview,anthropic2026bestpractices}.
-  \item \textbf{Fail closed.} If the gate itself errors, it blocks.
+  \item \textbf{Fail closed, but never trap.} If the gate itself errors, it blocks, then releases after one retry; unrelated tool calls are never blocked, and a gate whose script is missing does nothing. A gate that can wedge a session will be switched off.
 \end{enumerate}
 
 \subsection{Personal and Repository Gates}
 Experienced practitioners shape their own harnesses and keep tuning them. A gate therefore has two owners. The repository owns what is true for every contributor: exact commands, protected paths, the receipt format, and CI. A person may add a stricter personal gate on top, with repository-specific variants that route to each repository's commands, but it should never override the repository's own instructions. The repository's job is to make any gate easy to plug in: if the commands, protected paths, and receipt format are written down, a personal or team gate can enforce them without guessing.
 
-In a test of the template that accompanies this paper, a headless Claude Code session asked to edit a file and reply only ``done'' was blocked until it produced a receipt, and the receipt recorded that it had not been able to run the program. A request to open a pull request while the configured check failed was denied before the command ran. This is a demonstration, not evidence of effectiveness at scale.
+In a test of the template that accompanies this paper, a headless Claude Code session asked to edit a file and reply only ``done'' was blocked until it produced a receipt, and the receipt recorded that it had not been able to run the program; a follow-up question in the same session needed no receipt. A request to open a pull request while the configured check failed was denied before the command ran. A fresh-context review of the template found eight defects, including ways to satisfy the receipt with echoed text and to trap a session, which were fixed with a test for each. This is a demonstration, not evidence of effectiveness at scale.
 
 \section{Operational Method}
 \subsection{Greenfield Setup}

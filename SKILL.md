@@ -126,7 +126,7 @@ People who no longer read code replace reading with constraints. Enforce the def
 - Before changing existing behavior, check the commit and pull request that introduced it.
 - Forbid bypasses without human approval: deleting assertions, skipping tests, raising timeouts, weakening types, editing the gate.
 - For nontrivial diffs, have a fresh-context reviewer see only the final diff, acceptance behavior, and evidence.
-- Fail closed when the gate errors. Repeat the important checks in CI: hooks are fast feedback, not a security boundary.
+- Fail closed when the gate errors, but release after one retry and never block unrelated tool calls: a gate that can wedge a session will be switched off. Repeat the important checks in CI: hooks are fast feedback, not a security boundary.
 
 ## Agent Task Protocol
 
