@@ -1,0 +1,64 @@
+{
+  "description": "Completion gate: verification receipts before finishing, checks before pull requests.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$(git rev-parse --show-toplevel 2>/dev/null)/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness codex",
+            "timeout": 30,
+            "statusMessage": "Loading completion gate..."
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$(git rev-parse --show-toplevel 2>/dev/null)/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness codex",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*__(create_pull_request.*|merge_pull_request|enable_pr_auto_merge)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$(git rev-parse --show-toplevel 2>/dev/null)/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness codex",
+            "timeout": 600,
+            "statusMessage": "Running completion gate..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$(git rev-parse --show-toplevel 2>/dev/null)/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness codex",
+            "timeout": 60,
+            "statusMessage": "Checking verification receipt..."
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$(git rev-parse --show-toplevel 2>/dev/null)/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness codex",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -32,7 +32,7 @@ The paper adds a section on designing for concurrent agents. It also has an expl
 
 If nobody reads the code, the constraints around it become the review. Robert C. Martin put it plainly: he does not read his agents' code; he surrounds them with tests, Gherkin scenarios, mutation testing, coverage, and quality metrics, and keeps function size and complexity tightly bounded because messy code slows agents down. I work the same way, with a personal gate enforced by hooks: an agent cannot finish without saying what it verified and what it did not, and cannot open a pull request until the checks pass.
 
-The paper now has a section on gates, and [`templates/completion-gate/`](templates/completion-gate/) is a domain-neutral version of that gate for Claude Code and Codex. Repository skills belong in `.agents/skills/`, the cross-tool location, linked from `.claude/skills/` for Claude Code.
+The paper now has a section on gates, and [`templates/completion-gate/`](templates/completion-gate/) is a domain-neutral version of that gate for Claude Code and Codex. Repository skills belong in `.agents/skills/`, the cross-tool location, linked from `.claude/skills/` for Claude Code. This repository runs the same gate on itself: see the Completion Gate section of [`AGENTS.md`](AGENTS.md).
 
 ## Entry File Compatibility
 

@@ -1,0 +1,60 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness claude",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness claude",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|mcp__.*__(create_pull_request.*|merge_pull_request|enable_pr_auto_merge)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness claude",
+            "timeout": 600
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "P=\"$CLAUDE_PROJECT_DIR/.agents/gate/gate.py\"; [ -f \"$P\" ] || exit 0; python3 \"$P\" --harness claude",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

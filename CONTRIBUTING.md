@@ -13,5 +13,5 @@ Contributions should improve agent legibility: clearer routing, stronger citatio
 
 1. Keep the repository domain-neutral.
 2. Avoid private examples, private paths, secrets, or implementation-specific lore.
-3. Run `make paper` if you have LaTeX installed.
+3. Run `make check`. It runs the gate self-test and the repository checks, and builds the paper if you have LaTeX installed.
 4. If the paper changes operational guidance, update `SKILL.md` or `CHECKLIST.md` too.
