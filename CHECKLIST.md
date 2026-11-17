@@ -68,6 +68,7 @@
 ## Gates And Skills
 
 - [ ] Repository skills live in `.agents/skills/<name>/SKILL.md` with `name` and `description` frontmatter, linked from `.claude/skills/`.
+- [ ] A `verify` skill says which real run fits which kind of change, and each run is one command that prints a line per check.
 - [ ] A completion gate blocks finishing without a receipt: `VERIFIED`, `UNVERIFIED`, `PRECEDENT`, `CONFIDENCE`.
 - [ ] The gate judges only changes since the session started, including shell edits and commits.
 - [ ] Pull request creation runs the full check first and is denied on failure.
@@ -75,6 +76,7 @@
 - [ ] New tests are seen failing before the fix. Mutation testing runs where it pays.
 - [ ] Function size, complexity, and coverage are bounded mechanically.
 - [ ] Bypasses (deleted assertions, skipped tests, raised timeouts, edited gate) need human approval.
+- [ ] The fresh reviewer gets the review rules from the base branch, never from the change it reviews.
 - [ ] Important gate checks are repeated in CI and branch protection.
 
 ## Memory And Entropy
