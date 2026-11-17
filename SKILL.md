@@ -36,6 +36,7 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 - `tests/`: verification harness aligned with component boundaries.
 - Intent-record format: a short template for commit messages or pull request descriptions.
 - Review rules: scoped rules in `AGENTS.md` (root for the repo, nested for services) for what a reviewer would otherwise have to ask. Keep formatting and other mechanical checks in CI.
+- A `verify` skill (`.agents/skills/verify`): which real run fits which kind of change (boot the product, drive it, read what it did). Each run is one command that prints a line per check and fails on the first that does not hold. Passing tests do not show the product works.
 - `.agents/skills/<name>/SKILL.md`: repository skills in the cross-tool location, with `name` and `description` frontmatter. Link `.claude/skills/<name>` to the same folder for Claude Code.
 - Completion gate: hooks that block finishing without a verification receipt and block pull requests until the full check passes. A template lives in `templates/completion-gate/` of this skill's repository.
 
@@ -50,7 +51,7 @@ This skill uses `AGENTS.md` as the generic name for the agent entry map. If a ta
 7. Use one plan file per task for any task that spans more than one obvious edit.
 8. Track quality, known issues, and decisions from the first nontrivial implementation, one entry per file where many agents write.
 9. Define the intent-record format and scoped review rules.
-10. Install a completion gate and put skills in `.agents/skills/`.
+10. Install a completion gate and put skills in `.agents/skills/`, a `verify` skill first.
 
 ## Brownfield Repair Workflow
 
@@ -125,7 +126,8 @@ People who no longer read code replace reading with constraints. Enforce the def
 - Bound function size, complexity, and coverage mechanically. Messy code slows agents down.
 - Before changing existing behavior, check the commit and pull request that introduced it.
 - Forbid bypasses without human approval: deleting assertions, skipping tests, raising timeouts, weakening types, editing the gate.
-- For nontrivial diffs, have a fresh-context reviewer see only the final diff, acceptance behavior, and evidence.
+- For nontrivial diffs, have a fresh-context reviewer see only the final diff, acceptance behavior, and evidence. Give it the review rules as the base branch has them, never as the change does: a change must not loosen the rules that judge it.
+- Turn a miss into a check. Whatever a real run, a reviewer, or a person caught after the checks passed gets a test or a rule in code when a machine can decide it, and a line in the review rules only when it takes judgment. Remove a rule once a test covers it.
 - Fail closed when the gate errors, but release after one retry and never block unrelated tool calls: a gate that can wedge a session will be switched off. Repeat the important checks in CI: hooks are fast feedback, not a security boundary.
 
 ## Agent Task Protocol
@@ -140,7 +142,7 @@ When implementing a change in an agent-legible repo, scale the reading steps to 
 6. Read the component contract and relevant architecture/conventions.
 7. Inspect existing code and tests in the target component.
 8. Make the smallest change satisfying the task. Re-read files that others may have changed before editing them.
-9. Run documented verification commands.
+9. Run documented verification commands, then the real run the `verify` skill names for what changed.
 10. Re-sync with trunk, resolve conflicts, and re-run affected verification on the integrated result.
 11. Write the intent record and end with the verification receipt. Update plan/docs/quality only when durable project knowledge changed, and update instruction files in the same change that makes them outdated.
 12. Before opening a pull request, run the full check; expect the gate to deny it otherwise.
